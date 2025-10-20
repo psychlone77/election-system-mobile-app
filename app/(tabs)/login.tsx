@@ -1,9 +1,10 @@
 import theme from "@/constants/theme";
-import axiosInstance from "@/services/api";
+import { authenticateWithBiometric, getBiometricStatus, verifyPIN } from "@/utils/biometric";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -13,98 +14,97 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import nacl from "tweetnacl";
-import { encodeBase64 } from "tweetnacl-util";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [NIC, setNIC] = useState<string>("");
-  // registration code stored as single formatted string: "XXXX-XXXX-XXXX"
-  const [code, setCode] = useState<string>("");
+  const [userNIC, setUserNIC] = useState<string>("");
+  const [pin, setPin] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [biometricEnabled, setBiometricEnabled] = useState<boolean>(false);
 
-  const formatCode = (raw: string) => {
-    const clean = raw
-      .replace(/[^A-Za-z0-9]/g, "")
-      .toUpperCase()
-      .slice(0, 12);
-    const parts: string[] = [];
-    for (let i = 0; i < clean.length; i += 4) parts.push(clean.slice(i, i + 4));
-    return parts.join("-");
-  };
+  // Load user NIC and biometric status on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        let nic: string | null = null;
 
-  const handleCodeChange = (text: string) => {
-    setCode(formatCode(text));
-  };
+        if (Platform.OS === "web") {
+          nic = localStorage.getItem("userNIC");
+        } else {
+          nic = await SecureStore.getItemAsync("userNIC");
+        }
+
+        if (nic) {
+          setUserNIC(nic);
+
+          // Check if biometric is enabled
+          const bioStatus = await getBiometricStatus(nic);
+          if (bioStatus?.biometricEnabled) {
+            setBiometricEnabled(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const handleLogin = async () => {
-    console.log("Attempting login with NIC:", NIC);
-    // registration_code is already formatted by handleCodeChange to XXXX-XXXX-XXXX
-    const registration_code = code;
-
-    // NIC regex provided by user (fixed minor [0,9] -> [0-9])
-    const nicRegex =
-      /^(([5,6,7,8,9]{1})([0-9]{1})([0,1,2,3,5,6,7,8]{1})([0-9]{6})([vVxX]))|(([1,2]{1})([0-9]{1})([0-9]{2})([0,1,2,3,5,6,7,8]{1})([0-9]{7}))$/;
-    const nicValid = nicRegex.test(NIC);
-    // allow uppercase letters and digits in each group
-    const regCodeValid = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(registration_code);
-
-    if (!nicValid) {
-      showErrorToast("Invalid NIC", "Please enter a valid National ID Number");
+    if (!pin) {
+      showErrorToast("PIN Required", "Please enter your PIN");
       return;
     }
 
-    if (!regCodeValid) {
-      showErrorToast(
-        "Invalid Registration Code",
-        "Registration code must be in the form XXXX-XXXX-XXXX (12 digits with dashes)."
-      );
+    if (!userNIC) {
+      showErrorToast("No User Found", "Please register first");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Generate ed25519 keypair
-      const keyPair = nacl.sign.keyPair(); // ed25519
-      const publicKeyBase64 = encodeBase64(keyPair.publicKey);
-      const privateKeyBase64 = encodeBase64(keyPair.secretKey);
+      const isValid = await verifyPIN(userNIC, pin);
 
-      // Prepare payload
-      const payload = {
-        NIC,
-        registration_code,
-        public_key: publicKeyBase64,
-      };
-      console.log("Login payload:", payload);
-      console.log("ES_URL:", process.env.EXPO_PUBLIC_ES_URL);
-
-      // Use axios for the request
-      const response = await axiosInstance.post("/register", payload);
-
-      if (response.data.success) {
-        // Store private key securely. Use expo-secure-store on native; on web fallback to localStorage (with warning).
-        const keyName = `privateKey_${NIC}`;
-        if (Platform.OS === "web") {
-          // Not secure: only fallback. Warn the user.
-          localStorage.setItem(keyName, privateKeyBase64);
-        } else {
-          await SecureStore.setItemAsync(keyName, privateKeyBase64, {
-            keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-          });
-        }
-
-        showSuccessToast("Login Successful", response.data.message || `Welcome ${NIC}!`);
-        // Navigate after a short delay to allow toast to display
+      if (isValid) {
+        showSuccessToast("Login Successful", `Welcome back ${userNIC}!`);
         setTimeout(() => {
-          router.push("/vote");
+          router.push("/dashboard");
         }, 500);
       } else {
-        console.error("Login failed:", response.data);
-        showErrorToast("Login Failed", response.data.message || "Invalid credentials. Try again.");
+        showErrorToast("Invalid PIN", "Please enter the correct PIN");
       }
-    } catch (err) {
-      console.error("Login error:", err);
+    } catch (error) {
+      console.error("Login error:", error);
+      showErrorToast("Login Error", "An error occurred during login");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (!userNIC) {
+      showErrorToast("No User Found", "Please register first");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const success = await authenticateWithBiometric(userNIC);
+
+      if (success) {
+        showSuccessToast("Login Successful", `Welcome back ${userNIC}!`);
+        setTimeout(() => {
+          router.replace("/dashboard");
+        }, 500);
+      } else {
+        showErrorToast("Authentication Failed", "Biometric authentication failed");
+      }
+    } catch (error) {
+      console.error("Biometric error:", error);
+      showErrorToast("Biometric Error", "An error occurred during authentication");
     } finally {
       setIsLoading(false);
     }
@@ -114,24 +114,23 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>Login</Text>
-        <Text style={styles.label}>National ID Number</Text>
-        <TextInput
-          placeholder="Enter your National ID"
-          style={styles.input}
-          value={NIC}
-          onChangeText={setNIC}
-        />
 
-        <Text style={styles.label}>Initialization Code</Text>
+        {userNIC && (
+          <View style={styles.userInfo}>
+            <Text style={styles.userLabel}>User: {userNIC}</Text>
+          </View>
+        )}
+
+        <Text style={styles.label}>PIN</Text>
         <TextInput
-          placeholder="XXXX-XXXX-XXXX"
-          style={[styles.input, styles.singleCodeInput]}
-          value={code}
-          onChangeText={handleCodeChange}
-          maxLength={14}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          keyboardType={Platform.OS === "web" ? "default" : "default"}
+          placeholder="Enter your PIN"
+          style={styles.input}
+          value={pin}
+          onChangeText={setPin}
+          secureTextEntry
+          keyboardType="numeric"
+          maxLength={6}
+          editable={!isLoading}
         />
 
         <TouchableOpacity
@@ -142,9 +141,23 @@ export default function LoginScreen() {
           {isLoading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>Login with PIN</Text>
           )}
         </TouchableOpacity>
+
+        {biometricEnabled && (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={[styles.biometricButton, isLoading && styles.buttonDisabled]}
+              onPress={handleBiometricLogin}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="fingerprint" size={24} color="#6E49FF" />
+              <Text style={styles.biometricButtonText}>Login with Biometric</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
@@ -157,13 +170,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.background, // #F7F5FF
+    backgroundColor: colors.background,
   },
   card: {
     width: "90%",
-    padding: spacing.lg, // 24
-    borderRadius: radius.card, // 16
-    backgroundColor: colors.surface, // #FFFFFF
+    padding: spacing.lg,
+    borderRadius: radius.card,
+    backgroundColor: colors.surface,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -172,52 +185,85 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: typography.h2, // 22
+    fontSize: typography.h2,
     fontWeight: "700",
-    marginBottom: spacing.lg, // 24
-    color: colors.purple900, // #2B0638
+    marginBottom: spacing.lg,
+    color: colors.purple900,
     alignSelf: "flex-start",
   },
+  userInfo: {
+    width: "100%",
+    backgroundColor: colors.inputBg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.input,
+    marginBottom: spacing.md,
+  },
+  userLabel: {
+    fontSize: typography.body,
+    fontWeight: "600",
+    color: colors.purple900,
+  },
   label: {
-    fontSize: typography.label, // 14
+    fontSize: typography.label,
     fontWeight: "600",
     color: colors.purple900,
     alignSelf: "flex-start",
-    marginBottom: spacing.sm, // 8
+    marginBottom: spacing.sm,
   },
   input: {
     width: "100%",
     height: 44,
-    backgroundColor: colors.inputBg, // #FBFAFF
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: colors.neutralMuted, // #E9E6F7
-    borderRadius: radius.input, // 12
-    paddingHorizontal: spacing.md, // 12
-    marginBottom: spacing.md, // 12
-    fontSize: typography.body, // 16
+    borderColor: colors.neutralMuted,
+    borderRadius: radius.input,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    fontSize: typography.body,
     color: colors.purple900,
-  },
-  singleCodeInput: {
     textAlign: "center",
-    letterSpacing: 3,
+    letterSpacing: 2,
     fontWeight: "600",
   },
   button: {
     width: "100%",
     height: 44,
-    backgroundColor: colors.primary, // #6E49FF
-    borderRadius: radius.button, // 12
+    backgroundColor: colors.primary,
+    borderRadius: radius.button,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: spacing.md, // 12
+    marginTop: spacing.md,
   },
   buttonDisabled: {
-    backgroundColor: colors.primary + "99", // Add transparency when disabled
     opacity: 0.6,
   },
   buttonText: {
     color: "#FFF",
-    fontSize: typography.body, // 16
+    fontSize: typography.body,
+    fontWeight: "700",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.neutralMuted,
+    width: "100%",
+    marginVertical: spacing.md,
+  },
+  biometricButton: {
+    width: "100%",
+    height: 44,
+    backgroundColor: colors.inputBg,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: radius.button,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  biometricButtonText: {
+    color: colors.primary,
+    fontSize: typography.body,
     fontWeight: "700",
   },
 });

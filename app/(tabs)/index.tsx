@@ -1,29 +1,62 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import React, { useEffect, useState } from "react";
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import "react-native-get-random-values";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkRegistrationStatus();
+  }, []);
+
+  const checkRegistrationStatus = async () => {
+    try {
+      let nic: string | null = null;
+
+      if (Platform.OS === "web") {
+        nic = localStorage.getItem("userNIC");
+      } else {
+        nic = await SecureStore.getItemAsync("userNIC");
+      }
+
+      setIsRegistered(!!nic);
+    } catch (error) {
+      console.error("Error checking registration:", error);
+      setIsRegistered(false);
+    }
+  };
+
+  const handleStartVoting = () => {
+    if (isRegistered) {
+      router.push("/login");
+    } else {
+      router.push("/register");
+    }
+  };
+
+  const handleVerify = () => {
+    router.push("/check");
+  };
 
   return (
     <View style={styles.screen}>
       <View style={styles.container}>
-        <Text style={styles.heading}>Welcome</Text>
+        <Text style={styles.heading}>Welcome to eVoting</Text>
         <Text style={styles.subheading}>Secure, simple and modern voting</Text>
 
         <View style={styles.cardRow}>
-          <TouchableOpacity style={styles.card} onPress={() => router.push("/login")}>
+          <TouchableOpacity style={styles.card} onPress={handleStartVoting}>
             <MaterialIcons name="how-to-vote" size={36} color="#6E49FF" />
-            <Text style={styles.cardTitle}>Vote</Text>
-            <Text style={styles.cardBody}>Cast your vote quickly and securely.</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.card} onPress={() => router.push("/check")}>
-            <MaterialIcons name="search" size={36} color="#6E49FF" />
-            <Text style={styles.cardTitle}>Verify</Text>
-            <Text style={styles.cardBody}>Check your registration and eligibility.</Text>
+            <Text style={styles.cardTitle}>{isRegistered ? "Vote" : "Register"}</Text>
+            <Text style={styles.cardBody}>
+              {isRegistered
+                ? "Cast your vote quickly and securely."
+                : "Create your account to start voting."}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

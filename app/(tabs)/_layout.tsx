@@ -1,7 +1,7 @@
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Stack } from 'expo-router';
-import React from 'react';
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Stack } from "expo-router";
+import React from "react";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -11,26 +11,50 @@ export default function RootLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].background,
+          backgroundColor: Colors[colorScheme ?? "light"].background,
         },
       }}
     >
       <Stack.Screen
+        name="index"
+        options={{
+          title: "Home",
+        }}
+      />
+      <Stack.Screen
+        name="register"
+        options={{
+          title: "Register",
+        }}
+      />
+      <Stack.Screen
         name="login"
         options={{
-          title: 'Login',
+          title: "Login",
+        }}
+      />
+      <Stack.Screen
+        name="dashboard"
+        options={{
+          title: "Dashboard",
+        }}
+      />
+      <Stack.Screen
+        name="edit-profile"
+        options={{
+          title: "Edit Profile",
         }}
       />
       <Stack.Screen
         name="check"
         options={{
-          title: 'Check',
+          title: "Check",
         }}
       />
       <Stack.Screen
         name="vote"
         options={{
-          title: 'Vote',
+          title: "Vote",
         }}
       />
     </Stack>
