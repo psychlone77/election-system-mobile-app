@@ -1,98 +1,77 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from "expo-router";
+import { Alert, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const handleRate = () => {
+    Alert.alert("Action", "You chose: I want vote");
+    router.push("/login");
+  };
+
+  const handleVerify = () => {
+    Alert.alert("Action", "You chose: I want verify");
+    router.push("/check");
+  };
+
+  return (
+    <ImageBackground
+      source={require("@/assets/images/vote.jpg")} // 👈 Place your image in assets/images/bg.jpg
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <View style={styles.box}>
+          <TouchableOpacity style={styles.button} onPress={handleRate}>
+            <Text style={styles.buttonText}>
+              <MaterialIcons name="how-to-vote" size={30} color="#0c0808ff" />  I want vote
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={handleVerify}>
+            <Text style={styles.buttonText}>
+              <MaterialIcons name="safety-check" size={30} color="#0c0808ff" />  I want verify
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  background: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)", // dark overlay for better contrast
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  box: {
+    width: "80%",
+    padding: 25,
+    borderRadius: 10,
+    backgroundColor: "rgba(100, 152, 174, 0.8)",
+    alignItems: "center",
+  },
+  button: {
+    width: "100%",
+    paddingVertical: 15,
+    backgroundColor: "rgba(107, 99, 133, 0.9)",
+    borderRadius: 8,
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#0c0808ff",
+    fontSize: 22,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
