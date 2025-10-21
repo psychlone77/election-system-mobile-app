@@ -1,8 +1,11 @@
 import theme from "@/constants/theme";
 import axiosInstance from "@/services/api";
 import { getTokenSigned } from "@/services/getTokenSigned";
+import { submitBallot } from "@/services/submitBallot";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,6 +23,7 @@ interface Candidate {
 }
 
 export default function VoteScreen() {
+  const router = useRouter();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,16 +60,41 @@ export default function VoteScreen() {
 
     try {
       setIsSubmitting("Getting Token");
-      const { signature, preparedMessage, rawHashHex } = await getTokenSigned();
-      console.log("Response from getBlindToken:", { signature, preparedMessage, rawHashHex });
-      console.log("Vote submitted for candidate:", selected);
+      let token = await SecureStore.getItemAsync("token");
+      let signature = await SecureStore.getItemAsync("signature");
+      if (!token || !signature) {
+        const { signature: newSignature, preparedMessage: pm, rawHashHex } = await getTokenSigned();
+        console.log("Response from getTokenSigned:", { newSignature, pm, rawHashHex });
+        await SecureStore.setItemAsync("token", pm);
+        await SecureStore.setItemAsync("signature", newSignature);
+        signature = newSignature;
+        token = pm;
+      }
+      setIsSubmitting("Submitting Ballot");
+      if (!signature || !token) {
+        throw new Error("Signature or token is missing.");
+      }
+      const ballotResponse = await submitBallot({
+        candidateId: selected,
+        signature,
+        preparedMessage: token,
+      });
+      await SecureStore.setItemAsync(`ballot`, JSON.stringify(ballotResponse));
+      console.log("Ballot submission response:", ballotResponse);
       showSuccessToast("Your vote has been submitted successfully!");
+
+      // Navigate to vote-success page with ballot data
+      router.push({
+        pathname: "/vote-success",
+      });
+
+      setSelected(null);
     } catch (error) {
       console.error("Failed to submit vote:", error);
     } finally {
       setIsSubmitting("");
     }
-  }, [selected]);
+  }, [selected, router]);
 
   if (isLoading) {
     return (

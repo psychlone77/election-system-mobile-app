@@ -51,6 +51,12 @@ export default function RootLayout() {
           title: "Vote",
         }}
       />
+      <Stack.Screen
+        name="vote-success"
+        options={{
+          title: "Vote Submitted",
+        }}
+      />
     </Stack>
   );
 }

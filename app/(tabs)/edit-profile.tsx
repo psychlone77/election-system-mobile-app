@@ -382,6 +382,10 @@ export default function EditProfileScreen() {
                   await SecureStore.deleteItemAsync(keyNamePK);
                   await SecureStore.deleteItemAsync(keyNameBio);
                   await SecureStore.deleteItemAsync(keyNamePIN);
+                  await SecureStore.deleteItemAsync("ballot");
+                  await SecureStore.deleteItemAsync("token");
+                  await SecureStore.deleteItemAsync("signature");
+                  await SecureStore.deleteItemAsync("nic");
                 }
 
                 showSuccessToast(

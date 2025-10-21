@@ -25,6 +25,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [ballotId, setBallotId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -59,6 +60,21 @@ export default function DashboardScreen() {
           biometricEnabled: biometricData?.biometricEnabled || false,
           lastLogin: Date.now(),
         });
+
+        // Check for stored ballot ID
+        let storedBallotData: any = null;
+
+        if (Platform.OS === "web") {
+          const ballotStr = localStorage.getItem("ballot");
+          storedBallotData = ballotStr ? JSON.parse(ballotStr) : null;
+        } else {
+          const ballotStr = await SecureStore.getItemAsync("ballot");
+          storedBallotData = ballotStr ? JSON.parse(ballotStr) : null;
+        }
+
+        if (storedBallotData?.ballotId) {
+          setBallotId(storedBallotData.ballotId);
+        }
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -120,12 +136,23 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Start Voting Button */}
-          <TouchableOpacity style={styles.startVotingButton} onPress={() => router.push("/vote")}>
-            <MaterialIcons name="how-to-vote" size={28} color="#FFF" />
-            <Text style={styles.startVotingText}>Start Voting</Text>
-            <MaterialIcons name="arrow-forward" size={20} color="#FFF" />
-          </TouchableOpacity>
+          {/* Start Voting / View Vote Button */}
+          {ballotId ? (
+            <TouchableOpacity
+              style={styles.startVotingButton}
+              onPress={() => router.push("/vote-success")}
+            >
+              <MaterialIcons name="how-to-vote" size={28} color="#FFF" />
+              <Text style={styles.startVotingText}>View Vote</Text>
+              <MaterialIcons name="arrow-forward" size={20} color="#FFF" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.startVotingButton} onPress={() => router.push("/vote")}>
+              <MaterialIcons name="how-to-vote" size={28} color="#FFF" />
+              <Text style={styles.startVotingText}>Start Voting</Text>
+              <MaterialIcons name="arrow-forward" size={20} color="#FFF" />
+            </TouchableOpacity>
+          )}
 
           {/* Additional Info Section */}
           <View style={styles.infoSection}>
