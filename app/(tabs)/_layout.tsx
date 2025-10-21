@@ -46,12 +46,6 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="check"
-        options={{
-          title: "Check",
-        }}
-      />
-      <Stack.Screen
         name="vote"
         options={{
           title: "Vote",

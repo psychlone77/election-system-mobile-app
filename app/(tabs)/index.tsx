@@ -32,14 +32,10 @@ export default function HomeScreen() {
 
   const handleStartVoting = () => {
     if (isRegistered) {
-      router.push("/login");
+      router.replace("/login");
     } else {
-      router.push("/register");
+      router.replace("/register");
     }
-  };
-
-  const handleVerify = () => {
-    router.push("/check");
   };
 
   return (

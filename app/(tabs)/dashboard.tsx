@@ -121,7 +121,7 @@ export default function DashboardScreen() {
           </View>
 
           {/* Start Voting Button */}
-          <TouchableOpacity style={styles.startVotingButton}>
+          <TouchableOpacity style={styles.startVotingButton} onPress={() => router.push("/vote")}>
             <MaterialIcons name="how-to-vote" size={28} color="#FFF" />
             <Text style={styles.startVotingText}>Start Voting</Text>
             <MaterialIcons name="arrow-forward" size={20} color="#FFF" />

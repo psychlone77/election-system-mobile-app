@@ -34,6 +34,8 @@ const typography = {
   h2: 22,
   body: 16,
   label: 14,
+  small: 12,
+  xsmall: 10,
 };
 
 export default {

@@ -12,6 +12,7 @@ import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -338,6 +339,73 @@ export default function EditProfileScreen() {
             information private.
           </Text>
         </View>
+
+        {/* Delink Device */}
+        <View style={styles.delinkBox}>
+          <Text style={styles.delinkTitle}>Delink this device</Text>
+          <Text style={styles.delinkCaution}>
+            Caution: Delinking will remove all keys and security settings from this device. You will
+            need to re-register to use this device again.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.delinkButton}
+            onPress={async () => {
+              // confirm
+              const confirmed = await new Promise<boolean>((resolve) => {
+                Alert.alert(
+                  "Delink device",
+                  "This will remove your stored keys and security settings from this device. Are you sure you want to continue?",
+                  [
+                    { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+                    { text: "Delink", style: "destructive", onPress: () => resolve(true) },
+                  ],
+                  { cancelable: true }
+                );
+              });
+
+              if (!confirmed) return;
+
+              setIsLoading(true);
+              try {
+                const keyNamePK = `privateKey_${userNIC}`;
+                const keyNameBio = `biometric_${userNIC}`;
+                const keyNamePIN = `pin_${userNIC}`;
+
+                if (Platform.OS === "web") {
+                  localStorage.removeItem("userNIC");
+                  localStorage.removeItem(keyNamePK);
+                  localStorage.removeItem(keyNameBio);
+                  localStorage.removeItem(keyNamePIN);
+                } else {
+                  await SecureStore.deleteItemAsync("userNIC");
+                  await SecureStore.deleteItemAsync(keyNamePK);
+                  await SecureStore.deleteItemAsync(keyNameBio);
+                  await SecureStore.deleteItemAsync(keyNamePIN);
+                }
+
+                showSuccessToast(
+                  "Device Delinked",
+                  "This device has been delinked. You will be redirected to registration."
+                );
+                // navigate to register page
+                router.replace("/register");
+              } catch (err) {
+                console.error("Failed to delink device:", err);
+                showErrorToast("Error", "Failed to delink device. Please try again.");
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text style={styles.delinkButtonText}>Delink Device</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -532,5 +600,36 @@ const styles = StyleSheet.create({
     fontSize: typography.label,
     color: "#666",
     flex: 1,
+  },
+  delinkBox: {
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+    backgroundColor: "#fff6f6",
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: "#FFDCDC",
+  },
+  delinkTitle: {
+    fontSize: typography.label,
+    fontWeight: "700",
+    color: colors.danger || "#E53935",
+    marginBottom: spacing.sm,
+  },
+  delinkCaution: {
+    fontSize: typography.body,
+    color: "#8a1f1f",
+    marginBottom: spacing.md,
+  },
+  delinkButton: {
+    backgroundColor: colors.danger || "#E53935",
+    borderRadius: radius.button,
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  delinkButtonText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: typography.body,
   },
 });
