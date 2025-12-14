@@ -1,50 +1,86 @@
-# Welcome to your Expo app 👋
+# Election System Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A secure, modern mobile voting application built with React Native and Expo, featuring end-to-end encryption, biometric authentication, and a seamless user experience.
 
-## Get started
+## Related Repositories
 
-1. Install dependencies
+- [Election System Core](https://github.com/psychlone77/election-system-core)
+- [Election System Admin Panel](https://github.com/psychlone77/election-system-admin-panel)
 
-   ```bash
-   npm install
-   ```
+## Overview
 
-2. Start the app
+This mobile application provides a complete election system that allows users to:
+- **Register** securely using National ID and initialization codes
+- **Authenticate** using PIN or biometric authentication (fingerprint/face recognition)
+- **Vote** for candidates in a secure and encrypted manner
+- **Verify** voter eligibility and voting status
+- **Manage** profile and security settings
 
-   ```bash
-   npx expo start
-   ```
+## Key Features
 
-In the output, you'll find options to open the app in a
+### Security
+- **Ed25519 Cryptographic Keypairs** - Generated on registration for secure signing
+- **Secure Key Storage** - Private keys stored using SecureStore (native) or localStorage (web)
+- **PIN Protection** - 4-6 digit PIN with salted hashing
+- **Biometric Authentication** - Optional fingerprint/face recognition support
+- **Blind RSA Signatures** - Privacy-preserving vote submission
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### User Management
+- Smart registration detection and flow
+- PIN creation and management
+- Biometric enrollment and toggle
+- Profile dashboard with account information
+- Secure logout with session management
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### User Interface
+- Clean, modern design with purple accent theme
+- Intuitive navigation and form validation
+- Toast notifications for user feedback
+- Loading states and error handling
+- Responsive layout for all screen sizes
 
-## Get a fresh project
+## 📱 Screenshots
 
-When you're ready, run:
+### Registration Screen
+<img width="299" height="639" alt="image" src="https://github.com/user-attachments/assets/8e51f271-7aa0-4e02-a3f4-f044a1ed2a48" />
 
+
+### Voting Screen
+<img width="258" height="551" alt="image" src="https://github.com/user-attachments/assets/0b625194-55ea-4423-8ef4-dc5272410e87" />
+
+
+### Verification Screen
+<img width="281" height="601" alt="image" src="https://github.com/user-attachments/assets/afd78fa8-3b61-4996-92ff-0e84f961e677" />
+
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator (for Mac) or Android Emulator
+
+### Installation
+
+1. Clone the repository
 ```bash
-npm run reset-project
+git clone https://github.com/psychlone77/election-system-mobile-app.git
+cd election-system-mobile-app
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies
+```bash
+npm install
+```
 
-## Learn more
+3. Set up environment variables Create a .env file in the root directory with your API configuration:
+```bash
+API_BASE_URL=your_api_url_here
+```
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+4. Development Commands
+Start Development Server
+```bash
+npm start
+```
